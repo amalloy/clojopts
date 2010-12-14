@@ -2,9 +2,10 @@
   (:use cljopts.util)
   (:import (gnu.getopt Getopt LongOpt)))
 
-(defn read-opt [gnu-obj]
-  [(verify (! #{-1})
-           (.getopt gnu-obj))
+(defn read-opt [gnu-obj & long-opts]
+  [(transform-if zero?
+                 (verify (! #{-1}) (.getopt gnu-obj))
+                 #(aget long-opts (.getLongind %)))
    (.getOptarg gnu-obj)])
 
 (defn make-getopt
@@ -20,10 +21,12 @@
      ([\\a nil] [\\b \"10\"])"
   [getopt]
   (map (fn [[opt arg]]
-            [(-> opt char str keyword)
-             arg])
-          (take-while first
-                      (repeatedly #(read-opt getopt)))))
+         [(transform-if integer?
+                        (comp keyword str char)
+                        opt)
+          arg])
+       (take-while first
+                   (repeatedly #(read-opt getopt)))))
 
 (defn getopt-map
   "Turn an option seq into a map of keyword=>[values] pairs. If 
