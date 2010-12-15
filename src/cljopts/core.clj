@@ -14,7 +14,7 @@
               user-name name, id (keyword name)}}
         specs, 
         [short-names long-names] (separate #(= (.length %) 1) names)]
-    (keywordize [name short-names
+    (keywordize [name names short-names
                  long-names arg
                  parse user-name
                  default id])))
@@ -28,7 +28,7 @@
 (arg-type with-arg :required)
 (arg-type optional-arg :optional)
 
-(def cljopts hash-set)
+(def opt-list hash-set)
 
 (def long-opt-argmode {:none LongOpt/NO_ARGUMENT
                        :required LongOpt/REQUIRED_ARGUMENT
@@ -49,4 +49,19 @@
         [buf alias] (if short
                       [nil (int (first short))]
                       [(StringBuffer.) 0])]
-    [(map #(LongOpt. % arg-arg buf alias) long-names) buf]))
+    (map #(LongOpt. % arg-arg buf alias) long-names)))
+
+(defn parse-cmdline-from-specs [specs argv & prog-name]
+  (let [long-opts (mapcat get-long-opts specs)]
+    (getopt-map
+     (getopt-seq
+      (make-getopt prog-name
+                   (apply str (mapcat build-getopt-fragment specs))
+                   long-opts
+                   argv)
+      long-opts))))
+
+(defn spec-from-optname [specs name]
+  (first (filter (comp #(some #{name} %)
+                       :names)
+                 specs)))

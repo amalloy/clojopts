@@ -14,9 +14,12 @@
 
 (defn make-getopt
   ([prog-name opt-string argv]
-     (make-getopt prog-name opt-string (make-array LongOpt 0) argv))
+     (make-getopt prog-name opt-string [] argv))
   ([prog-name opt-string long-opts argv]
-     (Getopt. prog-name (into-array String (seq argv)) opt-string long-opts)))
+     (Getopt. prog-name
+              (into-array String (seq argv))
+              opt-string
+              (into-array LongOpt (seq long-opts)))))
 
 (defn getopt-seq
   "Turn iterative calls to gnu getopt into a lazy seq of return values.
