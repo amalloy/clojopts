@@ -2,11 +2,15 @@
   (:use cljopts.util)
   (:import (gnu.getopt Getopt LongOpt)))
 
-(defn read-opt [gnu-obj & long-opts]
-  [(transform-if zero?
-                 (verify (! #{-1}) (.getopt gnu-obj))
-                 #(aget long-opts (.getLongind %)))
-   (.getOptarg gnu-obj)])
+(defn read-opt [gnu-obj long-opts]
+  (let [opt-int (.getopt gnu-obj)]
+    (when-not (= -1 opt-int)
+      (let [opt-name (if-not (zero? opt-int)
+                       (str (char opt-int))
+                       (.getName (nth long-opts
+                                      (.getLongind gnu-obj))))
+            opt-val (.getOptarg gnu-obj)]
+        [opt-name opt-val]))))
 
 (defn make-getopt
   ([prog-name opt-string argv]
@@ -15,18 +19,13 @@
      (Getopt. prog-name (into-array String (seq argv)) opt-string long-opts)))
 
 (defn getopt-seq
-  "Turn iterative calls to gnu getopt into a lazy seq of return valuse.
+  "Turn iterative calls to gnu getopt into a lazy seq of return values.
 
 => (getopt-seq nil \"ab:c::d\" (into-array String [\"-ab\" \"10\"]))
      ([\\a nil] [\\b \"10\"])"
-  [getopt]
-  (map (fn [[opt arg]]
-         [(transform-if integer?
-                        (comp keyword str char)
-                        opt)
-          arg])
-       (take-while first
-                   (repeatedly #(read-opt getopt)))))
+  [getopt long-opts]
+  (take-while identity
+              (repeatedly #(read-opt getopt long-opts))))
 
 (defn getopt-map
   "Turn an option seq into a map of keyword=>[values] pairs. If 

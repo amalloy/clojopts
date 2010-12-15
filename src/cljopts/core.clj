@@ -47,6 +47,6 @@
         short (first short-names)
         arg-arg (long-opt-argmode arg)
         [buf alias] (if short
-                      [nil (int short)]
+                      [nil (int (first short))]
                       [(StringBuffer.) 0])]
     [(map #(LongOpt. % arg-arg buf alias) long-names) buf]))
