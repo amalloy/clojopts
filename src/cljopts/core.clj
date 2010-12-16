@@ -61,7 +61,16 @@
                    argv)
       long-opts))))
 
-(defn spec-from-optname [specs name]
-  (first (filter (comp #(some #{name} %)
-                       :names)
-                 specs)))
+(comment
+  (defn spec-from-optname [specs name]
+    (first (filter (comp #(some #{name} %)
+                         :names)
+                   specs))))
+
+(defn merge-opt-map [specs getopt-map]
+  (into {} (for [{:keys [id names parse] :as spec} specs]
+             {id (reduce into (map val 
+                                   (filter (comp 
+                                            (set names)
+                                            key)
+                                           getopt-map)))})))
