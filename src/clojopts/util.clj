@@ -1,4 +1,4 @@
-(ns cljopts.util)
+(ns clojopts.util)
 
 (def ! complement)
 

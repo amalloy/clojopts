@@ -1,8 +1,8 @@
-(ns cljopts.parse
-  (:use cljopts.getopt))
+(ns clojopts.parse
+  (:use clojopts.getopt))
 
 (def types
-     {:int (Integer. %)
+     {:int #(Integer. %)
       :boolean (complement #{"no" "false"})
       :file #(java.io.File. %)
       :str identity})

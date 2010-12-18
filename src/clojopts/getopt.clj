@@ -1,5 +1,5 @@
-(ns cljopts.getopt
-  (:use cljopts.util)
+(ns clojopts.getopt
+  (:use clojopts.util)
   (:import (gnu.getopt Getopt LongOpt)))
 
 (defn read-opt [gnu-obj long-opts]

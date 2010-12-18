@@ -1,9 +1,14 @@
-(ns cljopts.core
-  (:use cljopts.getopt
-        [cljopts.util :only [keywordize and-print]]
+(ns clojopts.core
+  (:use clojopts.getopt
+        clojopts.util
         [clojure.contrib.seq :only [separate]])
-  (:require [cljopts.parse :as parse])
+  (:require [clojopts.parse :as parse])
   (:import (gnu.getopt Getopt LongOpt)))
+
+(defn- maybe-parse [f]
+  (fn [x]
+    (when x
+      (f x))))
 
 (defn- parse-fn [{:keys [type group parse default]
                   :or {type :str, group :maybe-list, parse identity}}]
@@ -12,7 +17,7 @@
     (fn [args]
       (if-not (seq args)
         default
-        (or (group-fn (comp parse type) args)
+        (or (group-fn (apply comp (map maybe-parse [parse type])) args)
             default)))))
 
 (defn- option [names doc & specs]
@@ -83,20 +88,20 @@
                                      args))}))))
 
 (comment Sample usage
-         (cljopts "cljopts"
-                  ["-v" "--with-name" "cljopts"]
+         (clojopts "clojopts"
+                  ["-v" "--with-name" "clojopts"]
                   (with-arg ["n" "with-name"] "The name to use" :parse first)
                   (no-arg "v" "Verbose mode" :id :verbose :parse boolean)))
 
-(defn cljopts*
+(defn clojopts*
   ([prog-name argv & specs]
      (merge-opt-map specs
                     (parse-cmdline-from-specs specs argv prog-name))))
 
 (defn desugar-spec [spec]
   (let [[type & more] spec
-        [names [doc & opts]] (split-with (complement string?) more)]
+        [names [doc & opts]] (split-with (! string?) more)]
     `(~type ~(vec (map str names)) ~doc ~@opts)))
 
-(defmacro cljopts [prog-name argv & specs]
-  `(cljopts* ~prog-name ~argv ~@(vec (map desugar-spec specs))))
+(defmacro clojopts [prog-name argv & specs]
+  `(clojopts* ~prog-name ~argv ~@(vec (map desugar-spec specs))))
