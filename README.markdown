@@ -23,8 +23,8 @@ Clojure programs.
                    "-n" "10"])
     (clojopts "clojopts"
                 *argv*
-                (optional-arg file f name "The file to use" :type :file)
-                (with-arg lines n "How many lines to read" :type :int))
+                (optional-arg file f name "The file to use")
+                (with-arg lines n "How many lines to read"))
     => {:file #<File ~/src/clojure/awesome.clj>, :lines 10}
 
 ### Detailed usage options
