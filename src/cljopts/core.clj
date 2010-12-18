@@ -2,17 +2,29 @@
   (:use cljopts.getopt
         [cljopts.util :only [keywordize and-print]]
         [clojure.contrib.seq :only [separate]])
+  (:require [cljopts.parse :as parse])
   (:import (gnu.getopt Getopt LongOpt)))
+
+(defn- parse-fn [{:keys [type group parse default]
+                  :or {type :str, group :maybe-list, parse identity}}]
+  (let [group-fn (parse/grouping group)
+        type (parse/types type)]
+    (fn [args]
+      (if-not (seq args)
+        default
+        (or (group-fn (comp parse type) args)
+            default)))))
 
 (defn- option [names doc & specs]
   (let [[name names] ((apply juxt (if (vector? names)
                                     [first identity]
                                     [identity vector]))
                        names),
-        {:keys [arg default parse user-name id]
-         :or {arg :none, parse identity,
-              user-name name, id (keyword name)}}
-        specs, 
+        {:keys [arg default user-name id]
+         :or {arg :none, user-name name, id (keyword name)}
+         :as specs}
+        specs,
+        parse (parse-fn specs)
         [short-names long-names] (separate #(= (.length %) 1) names)]
     (keywordize [name names short-names
                  long-names arg
@@ -63,19 +75,28 @@
 
 (defn merge-opt-map [specs getopt-map]
   (into {} (for [{:keys [id names parse] :as spec} specs]
-             {id (reduce into (map (comp parse val) 
-                                   (filter (comp 
-                                            (set names)
-                                            key)
-                                           getopt-map)))})))
+             (when-let [args (seq (filter (comp 
+                                           (set names)
+                                           key)
+                                          getopt-map))]
+               {id (reduce into (map (comp parse val) 
+                                     args))}))))
 
 (comment Sample usage
          (cljopts "cljopts"
                   ["-v" "--with-name" "cljopts"]
                   (with-arg ["n" "with-name"] "The name to use" :parse first)
-                  (no-arg "v" "Verbose mode" :id :verbose :parse boolean))
-         )
-(defn cljopts
+                  (no-arg "v" "Verbose mode" :id :verbose :parse boolean)))
+
+(defn cljopts*
   ([prog-name argv & specs]
      (merge-opt-map specs
                     (parse-cmdline-from-specs specs argv prog-name))))
+
+(defn desugar-spec [spec]
+  (let [[type & more] spec
+        [names [doc & opts]] (split-with (complement string?) more)]
+    `(~type ~(vec (map str names)) ~doc ~@opts)))
+
+(defmacro cljopts [prog-name argv & specs]
+  `(cljopts* ~prog-name ~argv ~@(vec (map desugar-spec specs))))
