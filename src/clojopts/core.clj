@@ -27,63 +27,82 @@ optional."
                        (seq args))
              default)))))
 
-(defn- option [names doc & specs]
-  (let [[name names] ((apply juxt (if (vector? names)
-                                    [first identity]
-                                    [identity vector]))
-                       names),
-        {:keys [arg default user-name id]
-         :or {arg :none, user-name name, id (keyword name)}
-         :as specs}
-        specs,
-        parse (parse-fn specs)
-        [short-names long-names] (separate #(= (.length %) 1) names)]
-    (keywordize [name names short-names
-                 long-names arg
-                 parse user-name
-                 default id])))
+(defn- option
+  "Takes a name (or vector of names), a docstring, and an optional set
+of :option value pairs, and returns an attribute map representing all
+that information in a single (internal to clojopts) object."
+  ([names doc & specs]
+     (let [[name names] ((apply juxt (if (vector? names)
+                                       [first identity]
+                                       [identity vector]))
+                         names),
+           {:keys [arg default id]
+            :or {arg :none, id (keyword name)}}
+           specs,
+           parse (parse-fn specs)
+           [short-names long-names] (separate #(= (.length %) 1) names)]
+       (keywordize [name names short-names
+                    long-names arg
+                    parse default id]))))
 
-(defmacro arg-type [fname arg-val]
-  `(defn ~fname {:arglists '~'([name doc & specs])}
-     ([name# doc# & specs#]
-        (apply option name# doc# (list* :arg ~arg-val specs#)))))
+(defmacro arg-type
+  "Template for building versions of option (see above) with different
+argument-required-ness parameters."
+  ([fname arg-val]
+     `(defn ~fname {:arglists '~'([name(s) doc & specs])}
+        ([names# doc# & specs#]
+           (apply option names# doc# (list* :arg ~arg-val specs#))))))
 
 (arg-type no-arg :none)
 (arg-type with-arg :required)
 (arg-type optional-arg :optional)
 
+;; Really opt-list just takes the specs returned by a group of
+;; (option) calls and lumps them together, but it's given its own API
+;; to leave room for it to become more sophisticated in future without
+;; disrupting clients
 (def opt-list hash-set)
 
+;; Map the LongOpt int-enum back to nice Clojure keywords
 (def long-opt-argmode {:none LongOpt/NO_ARGUMENT
                        :required LongOpt/REQUIRED_ARGUMENT
                        :optional LongOpt/OPTIONAL_ARGUMENT})
 
-(defn build-getopt-fragment [spec]
-  (let [suffix (case (:arg spec)
-                     :none ""
-                     :required ":"
-                     :optional "::")
-        {names :short-names} spec]
-    (apply str (map str names (repeat suffix)))))
+(defn build-getopt-fragment
+  "Turn a simple spec-map into a getopt string fragment, by gluing
+  together all of the short option names, and sticking the appropriate
+  number of colons after any options that take parameters."
+  ([spec]
+     (let [suffix (case (:arg spec)
+                        :none ""
+                        :required ":"
+                        :optional "::")
+           {names :short-names} spec]
+       (apply str (map str names (repeat suffix))))))
 
-(defn get-long-opts [spec]
-  (let [{:keys [short-names long-names arg]} spec
-        short (first short-names)
-        arg-arg (long-opt-argmode arg)
-        [buf alias] (if short
-                      [nil (int (first short))]
-                      [(StringBuffer.) 0])]
-    (map #(LongOpt. % arg-arg buf alias) long-names)))
+(defn get-long-opts
+  "Take a single spec-map, and return a seq of LongOpt objects
+representing the long options it's willing to take"
+  ([spec]
+     (let [{:keys [short-names long-names arg]} spec
+           short (first short-names)
+           arg-arg (long-opt-argmode arg)
+           ;; try to emulate a short option if possible, just in case
+           [buf alias] (if short
+                         [nil (int (first short))]
+                         [(StringBuffer.) 0])]
+       (map #(LongOpt. % arg-arg buf alias) long-names))))
 
-(defn parse-cmdline-from-specs [specs argv & [prog-name]]
-  (let [long-opts (mapcat get-long-opts specs)]
-    (getopt-map
-     (getopt-seq
-      (make-getopt prog-name
-                   (apply str (mapcat build-getopt-fragment specs))
-                   long-opts
-                   argv)
-      long-opts))))
+(defn parse-cmdline-from-specs
+  ([specs argv & [prog-name]]
+     (let [long-opts (mapcat get-long-opts specs)]
+       (getopt-map
+        (getopt-seq
+         (make-getopt prog-name
+                      (apply str (mapcat build-getopt-fragment specs))
+                      long-opts
+                      argv)
+         long-opts)))))
 
 (defn merge-opt-map [specs getopt-map]
   (into {} (for [{:keys [id names parse] :as spec} specs]
@@ -97,8 +116,8 @@ optional."
 (comment Sample usage
          (clojopts "clojopts"
                   ["-v" "--with-name" "clojopts"]
-                  (with-arg ["n" "with-name"] "The name to use" :parse first)
-                  (no-arg "v" "Verbose mode" :id :verbose :parse boolean)))
+                  (with-arg ["n" "with-name"] "The name to use")
+                  (no-arg "v" "Verbose mode" :id :verbose)))
 
 (defn clojopts*
   ([prog-name argv & specs]
@@ -110,5 +129,17 @@ optional."
         [names [doc & opts]] (split-with (! string?) more)]
     `(~type ~(vec (map str names)) ~doc ~@opts)))
 
-(defmacro clojopts [prog-name argv & specs]
-  `(clojopts* ~prog-name ~argv ~@(vec (map desugar-spec specs))))
+(defmacro clojopts
+  "The main entry point for clojopts. Requires your program's
+name (for output in usage and version messages), a seq of command-line
+options, and any number of option specifiers. Returns a map of any
+options contained in the command line. Currently discards(!) all
+non-option arguments, but a future (pre-1.0) version will add them
+under the key :clojopts/more.
+
+Options are specified in the following format:
+<(arg-type name+ docstring & options)>
+
+See the README for further details."
+  ([prog-name argv & specs]
+     `(clojopts* ~prog-name ~argv ~@(vec (map desugar-spec specs)))))
