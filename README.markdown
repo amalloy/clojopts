@@ -1,7 +1,7 @@
 # clojopts
 ## What is it?
 
-[clojopts][clojopts] is a Clojure command-line parsing library. Its
+[clojopts][this] is a Clojure command-line parsing library. Its
 underlying parser is [java-getopt][jgetopt], which is a direct port of
 [GNU getopt][getopt], so users familiar with standard Unix tools
 should be very comfortable using it. However, clojopts comes with many
@@ -27,7 +27,6 @@ Clojure programs.
                 (with-arg lines n "How many lines to read" :type :int))
     => {:file #<File ~/src/clojure/awesome.clj>, :lines 10}
 
-
-[clojopts]: https://github.com/amalloy/clojopts
+[this]: https://github.com/amalloy/clojopts
 [jgetopt]: http://www.urbanophile.com/~arenn/hacking/download.html#getopt
 [getopt]: http://www.gnu.org/s/libc/manual/html_node/Getopt.html#Getopt
