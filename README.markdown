@@ -1,9 +1,9 @@
 # clojopts
 ## What is it?
 
-[clojopts][this] is a Clojure command-line parsing library. Its
-underlying parser is [java-getopt][jgetopt], which is a direct port of
-[GNU getopt][getopt], so users familiar with standard Unix tools
+[clojopts][] is a Clojure command-line parsing library. Its
+underlying parser is [java-getopt][], which is a direct port of
+[GNU getopt][], so users familiar with standard Unix tools
 should be very comfortable using it. However, clojopts comes with many
 features not available in raw getopt, making it more suitable for
 Clojure programs.
@@ -94,6 +94,6 @@ Permitted options include:
   be provide more regular results if you want to handle one or more
   arguments similarly. 
 
-[this]: https://github.com/amalloy/clojopts
-[jgetopt]: http://www.urbanophile.com/~arenn/hacking/download.html#getopt
-[getopt]: http://www.gnu.org/s/libc/manual/html_node/Getopt.html#Getopt
+[clojopts]: https://github.com/amalloy/clojopts
+[java-getopt]: http://www.urbanophile.com/~arenn/hacking/download.html#getopt
+[GNU getopt]: http://www.gnu.org/s/libc/manual/html_node/Getopt.html#Getopt
