@@ -95,23 +95,22 @@ representing the long options it's willing to take"
 
 (defn parse-cmdline-from-specs
   ([specs argv & [prog-name]]
-     (let [long-opts (mapcat get-long-opts specs)]
-       (getopt-map
-        (getopt-seq
-         (make-getopt prog-name
-                      (apply str (mapcat build-getopt-fragment specs))
-                      long-opts
-                      argv)
-         long-opts)))))
+     (getopt-map
+      (getopt-seq
+       (make-getopt prog-name
+                    (apply str (mapcat build-getopt-fragment specs))
+                    (mapcat get-long-opts specs)
+                    argv)))))
 
 (defn merge-opt-map [specs getopt-map]
-  (into {} (for [{:keys [id names parse] :as spec} specs]
-             (when-let [args (seq (filter (comp 
-                                           (set names)
-                                           key)
-                                          getopt-map))]
-               {id (reduce into (map (comp parse val) 
-                                     args))}))))
+  (merge (into {} (for [{:keys [id names parse] :as spec} specs]
+                    (when-let [args (seq (filter (comp 
+                                                  (set names)
+                                                  key)
+                                                 getopt-map))]
+                      {id (reduce into (map (comp parse val) 
+                                            args))})))
+         (select-keys getopt-map [:clojopts/more])))
 
 (comment Sample usage
          (clojopts "clojopts"
