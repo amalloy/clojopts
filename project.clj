@@ -1,4 +1,4 @@
-(defproject clojopts "0.1.0-SNAPSHOT"
+(defproject clojopts "0.2.0"
   :description "Command-line library for Clojure: a wrapper around GNU GetOpt, and some additional higher-level features."
   :dependencies [[clojure "1.2.0"]
                  [clojure-contrib "1.2.0"]
