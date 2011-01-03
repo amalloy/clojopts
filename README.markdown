@@ -33,9 +33,8 @@ The main entry point for clojopts is the `(clojopts [prog-name argv & specs])`
 macro. It requires your program's name (for
 output in usage and version messages), a seq of command-line options,
 and any number of option specifiers. Returns a map of any options
-contained in the command line. Currently **discards** all non-option
-arguments, but a future (pre-1.0) version will add them under the key
-`:clojopts/more`.
+contained in the command line. Any non-option arguments will be
+supplied under the key `:clojopts/more`.
 
 Options are specified in the following format:
 `(arg-type name+ docstring & options)`
