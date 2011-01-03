@@ -44,6 +44,3 @@ Options are specified in the following format:
 See the README for further details."
   ([prog-name argv & specs]
      `(clojopts* ~prog-name ~argv ~@(desugar-specs* specs))))
-
-
-

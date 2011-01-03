@@ -1,5 +1,5 @@
 (ns clojopts.help
-  (:use (clojopts getopt util))
+  (:use (clojopts util))
   (:require [clojure.string :as s]))
 
 (def ^{:dynamic true} *margin* 2)

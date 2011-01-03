@@ -1,8 +1,14 @@
 (ns clojopts.getopt
-  (:use clojopts.util)
+  (:use (clojopts util help))
   (:import (gnu.getopt Getopt LongOpt)))
 
-;; Map the LongOpt int-enum back to nice Clojure keywords
+(def ^{:doc "Bind to true in order to prevent clojopts from calling
+System/exit when --help is supplied; this kills swank as well, which
+is kinda a pain."
+       :dynamic true}
+  *testing* true)
+
+;; Map the LongOpt int-enum into nice Clojure keywords
 (def long-opt-argmode {:none LongOpt/NO_ARGUMENT
                        :required LongOpt/REQUIRED_ARGUMENT
                        :optional LongOpt/OPTIONAL_ARGUMENT})
@@ -20,18 +26,46 @@ representing the long options it's willing to take."
                          [(StringBuffer.) 0])]
        (map #(LongOpt. % arg-arg buf alias) long-names))))
 
+(defn show-help [specs]
+  (print (help-string specs)))
+
+(defmulti process-option
+  (fn [name & more]
+    (keyword "clojopts.getopt" name)))
+
+(defmethod process-option :default
+  [& args])
+
+(defmethod process-option ::help
+  [_ specs]
+  (show-help specs)
+  (when-not *testing*
+    (System/exit 0)))                   ; The user just wanted help,
+                                        ; so don't wake up the parent
+                                        ; app
+
+(defmethod process-option ::?
+  [_ specs]
+  (show-help specs)
+  (throw (IllegalArgumentException. "Unrecognized option")))
+
+(defmethod process-option ::version
+  [_ specs]
+  #_TODO)
+
 (defn- read-opt
   "Read a single key-value pair from a getopt handle. This function handles most
   of the interop required for dealing with GNU GetOpt, as well as hiding away
   the different ways long and short options are treated."
-  [{:keys [gnu-obj long-opts]}]
+  [{:keys [gnu-obj longopt-array specs]}]
   (let [opt-int (.getopt gnu-obj)]
     (when-not (= -1 opt-int)
       (let [opt-name (if-not (zero? opt-int)
                        (str (char opt-int))
-                       (.getName (nth long-opts
+                       (.getName (nth (seq longopt-array)
                                       (.getLongind gnu-obj))))
             opt-val (.getOptarg gnu-obj)]
+        (process-option opt-name specs)
         [opt-name opt-val]))))
 
 (defn- get-remaining-args
@@ -47,34 +81,18 @@ representing the long options it's willing to take."
 containing a GNU GetOpt object, as well as various bookkeeping data necessary
 for working with it. Clients should make no assumptions about the structure of
 this map."
-  ([prog-name opt-string argv]
-     (make-getopt prog-name opt-string [] argv))
-  ([prog-name opt-string long-opts argv]
-     (let [argv-array (into-array String (seq argv))
-           longopt-array (into-array LongOpt (seq long-opts))]
-       {:argv argv-array
-        :longopt-array longopt-array
-        :prog-name prog-name
-        :gnu-obj (Getopt. prog-name
-                          argv-array
-                          opt-string
-                          longopt-array)})))
-
-(comment
-  These still need to be written.
-  They should be able to pull all the information they need out of the
-  getopt object, even if that means I have to add a :specs key
-  (defmulti process-option (fn [name _]
-                             (keyword name)))
-
-  (defmethod process-option :default
-    [& args])
-
-  (defmethod process-option :help
-    [_ getopt])
-  (defmethod process-option :version
-    [_ getopt])
-)
+  [prog-name opt-string long-opts argv specs]
+  (let [argv-array (into-array String (seq argv))
+        longopt-array (into-array LongOpt (conj (seq long-opts)
+                                                (LongOpt. "help" LongOpt/NO_ARGUMENT (StringBuffer.) 0)))]
+    {:argv argv-array
+     :longopt-array longopt-array
+     :prog-name prog-name
+     :gnu-obj (Getopt. prog-name
+                       argv-array
+                       opt-string
+                       longopt-array)
+     :specs specs}))
 
 (defn getopt-seq
   "Turn iterative calls to gnu getopt into a seq of return values.

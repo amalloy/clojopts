@@ -63,5 +63,5 @@ that information in a single (internal to clojopts) object."
        (make-getopt prog-name
                     (apply str (mapcat build-getopt-fragment specs))
                     (mapcat get-long-opts specs)
-                    argv)))))
-
+                    argv
+                    specs)))))
