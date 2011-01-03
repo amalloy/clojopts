@@ -5,7 +5,7 @@
   (:require [clojopts.parse :as parse])
   (:import (gnu.getopt Getopt LongOpt)))
 
-(defn- maybe-parse
+(defn maybe-parse
   "A poor man's maybe-m: apply the supplied function to anything but
   nil."
   ([f]
@@ -13,7 +13,7 @@
        (when-not (nil? x)
          (f x)))))
 
-(defn- parse-fn
+(defn parse-fn
   "Build a function for parsing an option-list, with the specified
 grouping strategy, type coercion strategy, user-specified
 parser/transformer, and default value. All of these arguments are
@@ -27,31 +27,31 @@ optional."
                        (seq args))
              default)))))
 
-(defn- option
+(defn option
   "Takes a name (or vector of names), a docstring, and an optional set
-of :option value pairs, and returns an attribute map representing all
+of :option, value pairs, and returns an attribute map representing all
 that information in a single (internal to clojopts) object."
-  ([names doc & specs]
+  ([names doc specs]
      (let [[name names] ((apply juxt (if (vector? names)
                                        [first identity]
                                        [identity vector]))
                          names),
-           {:keys [arg default id]
-            :or {arg :none, id (keyword name)}}
+           {:keys [arg default id user-name]
+            :or {arg :none, id (keyword name), user-name "ARG"}}
            specs,
            parse (parse-fn specs)
            [short-names long-names] (separate #(= (.length %) 1) names)]
        (keywordize [name names short-names
-                    long-names arg
-                    parse default id]))))
+                    long-names arg user-name
+                    parse default id doc]))))
 
 (defmacro arg-type
   "Template for building versions of option (see above) with different
 argument-required-ness parameters."
-  ([fname arg-val]
-     `(defn ~fname {:arglists '~'([name(s) doc & specs])}
-        ([names# doc# & specs#]
-           (apply option names# doc# (list* :arg ~arg-val specs#))))))
+  [fname arg-val]
+  `(defn ~fname {:arglists '~'([name+ doc specs])}
+     ([names# doc# & specs#]
+        (option names# doc# (apply hash-map :arg ~arg-val specs#)))))
 
 (arg-type no-arg :none)
 (arg-type with-arg :required)
@@ -61,7 +61,7 @@ argument-required-ness parameters."
 ;; (option) calls and lumps them together, but it's given its own API
 ;; to leave room for it to become more sophisticated in future without
 ;; disrupting clients
-(def opt-list hash-set)
+(def opt-list vector)
 
 ;; Map the LongOpt int-enum back to nice Clojure keywords
 (def long-opt-argmode {:none LongOpt/NO_ARGUMENT
@@ -82,7 +82,7 @@ argument-required-ness parameters."
 
 (defn get-long-opts
   "Take a single spec-map, and return a seq of LongOpt objects
-representing the long options it's willing to take"
+representing the long options it's willing to take."
   ([spec]
      (let [{:keys [short-names long-names arg]} spec
            short (first short-names)
@@ -128,6 +128,12 @@ representing the long options it's willing to take"
         [names [doc & opts]] (split-with (! string?) more)]
     `(~type ~(vec (map str names)) ~doc ~@opts)))
 
+(defn desugar-specs* [specs]
+  (vec (map desugar-spec specs)))
+
+(defmacro desugar-specs [& specs]
+  (desugar-specs* specs))
+
 (defmacro clojopts
   "The main entry point for clojopts. Requires your program's
 name (for output in usage and version messages), a seq of command-line
@@ -141,4 +147,4 @@ Options are specified in the following format:
 
 See the README for further details."
   ([prog-name argv & specs]
-     `(clojopts* ~prog-name ~argv ~@(vec (map desugar-spec specs)))))
+     `(clojopts* ~prog-name ~argv ~@(desugar-specs* specs))))

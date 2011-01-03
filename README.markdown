@@ -61,6 +61,9 @@ Permitted options include:
   this is the keyword version of the first name you supply, but you
   can override this behavior, for example to provide the user a --name
   option that you wish to refer to as :file.
+* :user-name - For options with arguments: what to call the argument
+  in the --help string; defaults to "ARG". For example, --help might
+  display --file=NAME
 * :parse - a custom parsing function to run on the option's value
   before returning it. See the :group key for details on how the parse
   function is applied.

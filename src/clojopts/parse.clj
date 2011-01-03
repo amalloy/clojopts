@@ -5,20 +5,22 @@
 (declare types)
 
 (defn auto-type [val]
-  (if-not val
-    true ; no argument, so probably just a boolean/toggle/flag
-    (try
-      (Integer. val)
-      (catch Exception _
-        (try
-          (Double. val)
-          (catch Exception _
-            (let [f (File. val)]
-              (if (.exists f)
-                f
-                (if-not ((types :boolean) val)
-                  false
-                  val)))))))))
+  (cond
+   (not val) true ; no argument, so probably just a boolean/toggle/flag
+   (sequential? val) val           ; some kind of list; leave it alone
+   :else
+   (try
+     (Integer. val)
+     (catch Exception _
+       (try
+         (Double. val)
+         (catch Exception _
+           (let [f (File. val)]
+             (if (.exists f)
+               f
+               (if-not ((types :boolean) val)
+                 false
+                 val)))))))))
 
 (def types
      {:int #(Integer. %)
@@ -27,7 +29,7 @@
       :str identity
       :guess auto-type})
 
-(defn- groupfn [f]
+(defn groupfn [f]
   (fn [parse args]
     (when (seq args)
       (parse (f args)))))

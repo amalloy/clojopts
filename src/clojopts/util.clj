@@ -1,4 +1,5 @@
-(ns clojopts.util)
+(ns clojopts.util
+  (:require [clojure.string :as s]))
 
 (def ! complement)
 
@@ -33,3 +34,10 @@ return (f arg); otherwise, return (f-not arg) (defaults to identity)."
   `(let [x# ~val]
      (println '~val "is" x#)
      x#))
+
+(defn word-wrap [s width]
+  (let [pat-str (str "(.{1," (dec width) "}[.,!?]?"
+                     "|.{1," width "})(\\s|$)+")
+        pat (re-pattern pat-str)
+        res (s/replace s pat "$1\n")]
+    (s/split res #"\n")))
