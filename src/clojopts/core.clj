@@ -1,27 +1,6 @@
 (ns clojopts.core
-  (:use clojopts.getopt
-        clojopts.util
-        [clojure.contrib.seq :only [separate]])
-  (:require [clojopts.parse :as parse])
-  (:import (gnu.getopt Getopt LongOpt)))
-
-(defn option
-  "Takes a name (or vector of names), a docstring, and an optional set
-of :option, value pairs, and returns an attribute map representing all
-that information in a single (internal to clojopts) object."
-  ([names doc specs]
-     (let [[name names] ((apply juxt (if (vector? names)
-                                       [first identity]
-                                       [identity vector]))
-                         names),
-           {:keys [arg default id user-name]
-            :or {arg :none, id (keyword name), user-name "ARG"}}
-           specs,
-           parse (parse/parse-fn specs)
-           [short-names long-names] (separate #(= (.length %) 1) names)]
-       (keywordize [name names short-names
-                    long-names arg user-name
-                    parse default id doc]))))
+  (:use (clojopts getopt util ui))
+  (:require [clojopts.parse :as parse]))
 
 (defmacro arg-type
   "Template for building versions of option (see above) with different
@@ -34,67 +13,6 @@ argument-required-ness parameters."
 (arg-type no-arg :none)
 (arg-type with-arg :required)
 (arg-type optional-arg :optional)
-
-;; Really opt-list just takes the specs returned by a group of
-;; (option) calls and lumps them together, but it's given its own API
-;; to leave room for it to become more sophisticated in future without
-;; disrupting clients
-(def opt-list vector)
-
-;; Map the LongOpt int-enum back to nice Clojure keywords
-(def long-opt-argmode {:none LongOpt/NO_ARGUMENT
-                       :required LongOpt/REQUIRED_ARGUMENT
-                       :optional LongOpt/OPTIONAL_ARGUMENT})
-
-(defn build-getopt-fragment
-  "Turn a simple spec-map into a getopt string fragment, by gluing
-  together all of the short option names, and sticking the appropriate
-  number of colons after any options that take parameters."
-  ([spec]
-     (let [suffix (case (:arg spec)
-                        :none ""
-                        :required ":"
-                        :optional "::")
-           {names :short-names} spec]
-       (apply str (map str names (repeat suffix))))))
-
-(defn get-long-opts
-  "Take a single spec-map, and return a seq of LongOpt objects
-representing the long options it's willing to take."
-  ([spec]
-     (let [{:keys [short-names long-names arg]} spec
-           short (first short-names)
-           arg-arg (long-opt-argmode arg)
-           ;; try to emulate a short option if possible, just in case
-           [buf alias] (if short
-                         [nil (int (first short))]
-                         [(StringBuffer.) 0])]
-       (map #(LongOpt. % arg-arg buf alias) long-names))))
-
-(defn parse-cmdline-from-specs
-  ([specs argv & [prog-name]]
-     (getopt-map
-      (getopt-seq
-       (make-getopt prog-name
-                    (apply str (mapcat build-getopt-fragment specs))
-                    (mapcat get-long-opts specs)
-                    argv)))))
-
-(defn merge-opt-map [specs getopt-map]
-  (merge (into {} (for [{:keys [id names parse] :as spec} specs]
-                    (when-let [args (seq (filter (comp 
-                                                  (set names)
-                                                  key)
-                                                 getopt-map))]
-                      {id (reduce into (map (comp parse val) 
-                                            args))})))
-         (select-keys getopt-map [:clojopts/more])))
-
-(comment Sample usage
-         (clojopts "clojopts"
-                  ["-v" "--with-name" "clojopts"]
-                  (with-arg ["n" "with-name"] "The name to use")
-                  (no-arg "v" "Verbose mode" :id :verbose)))
 
 (defn clojopts*
   ([prog-name argv & specs]
@@ -126,3 +44,6 @@ Options are specified in the following format:
 See the README for further details."
   ([prog-name argv & specs]
      `(clojopts* ~prog-name ~argv ~@(desugar-specs* specs))))
+
+
+

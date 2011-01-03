@@ -2,6 +2,24 @@
   (:use clojopts.util)
   (:import (gnu.getopt Getopt LongOpt)))
 
+;; Map the LongOpt int-enum back to nice Clojure keywords
+(def long-opt-argmode {:none LongOpt/NO_ARGUMENT
+                       :required LongOpt/REQUIRED_ARGUMENT
+                       :optional LongOpt/OPTIONAL_ARGUMENT})
+
+(defn get-long-opts
+  "Take a single spec-map, and return a seq of LongOpt objects
+representing the long options it's willing to take."
+  ([spec]
+     (let [{:keys [short-names long-names arg]} spec
+           short (first short-names)
+           arg-arg (long-opt-argmode arg)
+           ;; try to emulate a short option if possible, just in case
+           [buf alias] (if short
+                         [nil (int (first short))]
+                         [(StringBuffer.) 0])]
+       (map #(LongOpt. % arg-arg buf alias) long-names))))
+
 (defn- read-opt
   "Read a single key-value pair from a getopt handle. This function handles most
   of the interop required for dealing with GNU GetOpt, as well as hiding away
