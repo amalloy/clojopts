@@ -51,6 +51,6 @@
                         [#(str % \newline)
                          doc]])))))
 
-(defn print-help [specs]
+(defn help-string [specs]
   (let [name-width (name-col-width (map name-column specs))]
-    (print (s/join \newline (map (partial help-line name-width) specs)))))
+    (s/join \newline (map (partial help-line name-width) specs))))
