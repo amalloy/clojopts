@@ -5,28 +5,6 @@
   (:require [clojopts.parse :as parse])
   (:import (gnu.getopt Getopt LongOpt)))
 
-(defn maybe-parse
-  "A poor man's maybe-m: apply the supplied function to anything but
-  nil."
-  ([f]
-     (fn [x]
-       (when-not (nil? x)
-         (f x)))))
-
-(defn parse-fn
-  "Build a function for parsing an option-list, with the specified
-grouping strategy, type coercion strategy, user-specified
-parser/transformer, and default value. All of these arguments are
-optional."
-  ([{:keys [type group parse default]
-     :or {type :guess, group :maybe-map, parse identity}}]
-     (let [group-fn (parse/grouping group)
-           type (parse/types type)]
-       (fn [args]
-         (or (group-fn (apply comp (map maybe-parse [parse type]))
-                       (seq args))
-             default)))))
-
 (defn option
   "Takes a name (or vector of names), a docstring, and an optional set
 of :option, value pairs, and returns an attribute map representing all
@@ -39,7 +17,7 @@ that information in a single (internal to clojopts) object."
            {:keys [arg default id user-name]
             :or {arg :none, id (keyword name), user-name "ARG"}}
            specs,
-           parse (parse-fn specs)
+           parse (parse/parse-fn specs)
            [short-names long-names] (separate #(= (.length %) 1) names)]
        (keywordize [name names short-names
                     long-names arg user-name
