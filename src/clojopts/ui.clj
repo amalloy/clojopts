@@ -3,12 +3,12 @@
         [clojure.contrib.seq :only [separate]]))
 
 (defn name-for-type [t]
-  (or ({:guess "arg"
+  (get {:guess "arg"
         :int "int"
         :boolean "bool"
         :str "str"
-        :file "file"} t)
-      "arg"))
+        :file "file"}
+       t "arg"))
 
 (defn option
   "Takes a name (or vector of names), a docstring, and an optional set
