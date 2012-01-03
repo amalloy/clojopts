@@ -1,6 +1,6 @@
 (ns clojopts.core
   (:use (clojopts getopt util ui)
-        [amalloy.utils.macro :only [macro-do]])
+        [useful.macro :only [macro-do]])
   (:require [clojopts.parse :as parse]))
 
 (defn qualified-keyword [sym]
