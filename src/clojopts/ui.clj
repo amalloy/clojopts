@@ -1,11 +1,6 @@
 (ns clojopts.ui
   (:use (clojopts parse util getopt)))
 
-(defn separate
-  [f s]
-  "Produce a vector of two seqs: s filtered with f and the complement of f."
-  [(filter f s) (filter (complement f) s)])
-
 (defn name-for-type [t]
   (get {:guess "arg"
         :int "int"
@@ -27,7 +22,7 @@ that information in a single (internal to clojopts) object."
             :or {arg :none, id (keyword name), user-name (name-for-type (:type specs))}}
            specs,
            parse (parse-fn specs)
-           [short-names long-names] (separate #(= (.length %) 1) names)]
+           [short-names long-names] ((juxt filter remove) #(= (.length %) 1) names)]
        (keywordize [name names short-names
                     long-names arg user-name
                     parse default id doc]))))
