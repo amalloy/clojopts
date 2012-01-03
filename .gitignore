@@ -5,4 +5,4 @@ pom.xml
 lib
 classes
 build
-/.lein-failures
+/.lein*
