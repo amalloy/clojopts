@@ -73,7 +73,6 @@ representing the long options it's willing to take."
   strings GNU GetOpt says are not options. It is an error to call this function
   before all options have been read."
   ([{:keys [gnu-obj argv]}]
-     {:pre [(= -1 (.getopt gnu-obj))]}
      (drop (.getOptind gnu-obj) argv)))
 
 (defn make-getopt
