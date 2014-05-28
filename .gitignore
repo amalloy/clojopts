@@ -6,3 +6,5 @@ lib
 classes
 build
 /.lein*
+target/
+pom.xml*
