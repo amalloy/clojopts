@@ -9,6 +9,12 @@
         :file "file"}
        t "arg"))
 
+(def ^:dynamic *stop-at-first-non-option*
+  "If bound to true, stops processing at the first non-option parameter, and returns
+the remainder as :clojopts/more. If false (the default), non-option parameters are
+collected in the middle of option parsing, and returned as :clojopts/more."
+  false)
+
 (defn option
   "Takes a name (or vector of names), a docstring, and an optional set
 of :option, value pairs, and returns an attribute map representing all
@@ -60,7 +66,9 @@ that information in a single (internal to clojopts) object."
      (getopt-map
       (getopt-seq
        (make-getopt prog-name
-                    (apply str (mapcat build-getopt-fragment specs))
+                    (apply str (when *stop-at-first-non-option*
+                                 "+")
+                           (mapcat build-getopt-fragment specs))
                     (mapcat get-long-opts specs)
                     argv
                     specs)))))
