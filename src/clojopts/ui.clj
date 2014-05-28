@@ -53,11 +53,11 @@ that information in a single (internal to clojopts) object."
 
 (defn merge-opt-map [specs getopt-map]
   (merge (into {} (for [{:keys [id names parse] :as spec} specs]
-                    (when-let [args (seq (filter (comp 
+                    (when-let [args (seq (filter (comp
                                                   (set names)
                                                   key)
                                                  getopt-map))]
-                      {id (reduce into (map (comp parse val) 
+                      {id (reduce into (map (comp parse val)
                                             args))})))
          (select-keys getopt-map [:clojopts/more])))
 
