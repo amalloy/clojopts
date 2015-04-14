@@ -1,4 +1,4 @@
-(defproject clojopts "0.3.4"
+(defproject clojopts "0.3.5"
   :description "Command-line library for Clojure: a wrapper around GNU
   GetOpt, and some additional higher-level features."
   :url "https://github.com/amalloy/clojopts"

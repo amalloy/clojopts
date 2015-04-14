@@ -40,6 +40,7 @@ representing the long options it's willing to take."
   [_ specs]
   (show-help specs)
   (when-not *testing*
+    (flush)
     (System/exit 0)))                   ; The user just wanted help,
                                         ; so don't wake up the parent
                                         ; app
